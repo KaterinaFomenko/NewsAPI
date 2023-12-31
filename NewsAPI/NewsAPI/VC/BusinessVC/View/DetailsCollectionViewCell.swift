@@ -51,6 +51,22 @@ final class DetailsCollectionViewCell: UICollectionViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    // MARK: - Methods
+    func set(article: ArticleCellViewModel) {
+        titleLabel.text = article.title
+        descriptionLabel.text = article.description
+        
+        if let data = article.imageData,
+           let image = UIImage(data: data) {
+            imageView.image = image
+            imageView.contentMode = .scaleAspectFill
+            imageView.clipsToBounds = true
+        } else {
+            imageView.image = UIImage(named: "Image")
+        }
+    }
+    
     private func setupUI() {
         addSubview(imageView)
         addSubview(titleLabel)
@@ -58,7 +74,6 @@ final class DetailsCollectionViewCell: UICollectionViewCell {
         
         setupConstraints()
     }
-    
     
     private func setupConstraints() {
         imageView.snp.makeConstraints { make in
@@ -77,7 +92,6 @@ final class DetailsCollectionViewCell: UICollectionViewCell {
             make.trailing.equalToSuperview()
         }
     }
-    // нужно проинициализировать ячейку в BusinessVC для этого нам нужно ее зарегистрировать во ViewDidLoad - collectionView.register
 }
-    
+
 
