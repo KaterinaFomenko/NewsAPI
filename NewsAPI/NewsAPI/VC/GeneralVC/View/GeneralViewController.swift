@@ -8,17 +8,18 @@
 import UIKit
 import SnapKit
 
-class GeneralViewController: UIViewController {
+class GeneralViewController: BaseNewsVC {
     
-    // MARK: - GUI Variables,  // добавляем во viewDidLoad() и настраиваем констрейнты
+    // MARK: - GUI Variables
     private lazy var searchBar: UISearchBar = {
-       let searchBar = UISearchBar()
+        let searchBar = UISearchBar()
+        searchBar.delegate = self
         
         return searchBar
     }()
     
     private lazy var collectionView: UICollectionView = {
-        //2_передаем екземпляр layout в кол-ю
+       
         let layout = UICollectionViewFlowLayout()
         //3_созд ячейку
         let width = (view.frame.width - 15) / 2
@@ -26,31 +27,28 @@ class GeneralViewController: UIViewController {
         layout.minimumLineSpacing = 5
         layout.minimumInteritemSpacing = 5
         
-        
-        
-        //1_ создаем саму коллекцию
         let collectionView = UICollectionView(frame: CGRect(x: 0,
                                                             y: 0,
                                                             width: view.frame.width,
                                                             height: view.frame.height - searchBar.frame.height),
                                               collectionViewLayout: layout)
         
-        // 5_ для того что бы setup ячейку в коллекцию - надо реализовать делегат Data Sourse(+ подпишемся)
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.backgroundColor = .white
+        collectionView.bounces = true
         
         return collectionView
     }()
     
     // MARK: - Properties
-    private var viewModel: GeneralViewModelProtocol
+    private var viewModel: NewsListViewModelProtocol
     
     // MARK: - Life circle
-    init(viewModel: GeneralViewModelProtocol) {
+    init(viewModel: NewsListViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
-        setupViewModel()
+        self.setupViewModel()
     }
     
     required init?(coder: NSCoder) {
@@ -59,96 +57,130 @@ class GeneralViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         setupUI()
-        //DataManager.setupTestData()
+        registerCell()
+        viewModel.loadData(searchText: nil)
     }
     
-    // MARK: - Methods
-    // перезагружаем таблицу
+    // MARK: - Method
     private func setupViewModel() {
         viewModel.reloadData = { [weak self] in
             self?.collectionView.reloadData()
         }
         
-        viewModel.reloadCell = { [weak self] row in
-            self?.collectionView.reloadItems(at: [IndexPath(row: row, section: 0)])
+        viewModel.reloadCell = { [weak self] indexPath in
+            self?.collectionView.reloadItems(at: [indexPath])
         }
         
         viewModel.showError = { error in
-            // TODO: show alert with error
+            self.showAlert(message: error)
             print(error)
         }
     }
-
+    
     // MARK: - Private methods
     private func setupUI() {
-        view.backgroundColor = .white
-        // добавляем во view и настраиваем констрейнты
+        setupStyle()
+        
         view.addSubview(searchBar)
         view.addSubview(collectionView)
-        
-        // регистрируем ячейку
-        // 4 для того что бы setup ячейку в коллекцию - надо реализовать делегат Data Sourse(+ подпишемся)
-        collectionView.register(GeneralCollectionViewCell.self,
-                                forCellWithReuseIdentifier: "GeneralCollectionViewCell")
         setupConstraints()
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+        if let navigationBar = navigationController?.navigationBar {
+            navigationBar.addGestureRecognizer(tapGesture)
+        }
     }
     
+    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+        view.endEditing(true)
+    }
+    
+    func registerCell() {
+        collectionView.register(GeneralCollectionViewCell.self,
+                                forCellWithReuseIdentifier: "GeneralCollectionViewCell")
+    }
     
     private func setupConstraints() {
         searchBar.snp.makeConstraints { make in
             make.top.leading.trailing.equalTo(view.safeAreaLayoutGuide)
         }
-         
+        
         collectionView.snp.makeConstraints { make in
             make.top.equalTo(searchBar.snp.bottom)
             make.leading.trailing.equalToSuperview().inset(5)
             make.bottom.equalTo(view.safeAreaLayoutGuide)
         }
     }
-//    // MARK: - Show new ViewControler
-//    // м-д презентации(на вход: тип ячейки к-ю будет отображать - контент ячейки)
-//    func showInfoVC(with data: ArticleCellViewModel) {
-//        let cellData = DataNews.data
-//        let infoVC = InfoVC()
-//        infoVC.modalPresentationStyle = .popover
-//        infoVC.data = data
-//        present(infoVC, animated: true)
-//        navigationController?.pushViewController(infoVC, animated: true)
-//    }
 }
+
 // MARK: - UICollectionViewDataSource
 extension GeneralViewController: UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        viewModel.numberOfCells   // кол-во ячеек
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        viewModel.sections.count
     }
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GeneralCollectionViewCell",
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        viewModel.sections[section].items.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        guard let article = viewModel.sections[indexPath.section].items[indexPath.row] as? ArticleCellViewModel,
+              let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "GeneralCollectionViewCell",
                                                             for: indexPath) as? GeneralCollectionViewCell else
         { return UICollectionViewCell() }
         
-        let article = viewModel.getArticle(for: indexPath.row)
         cell.set(article: article)
-        print(#function)
+        
         return cell
     }
-//    // момент нажатия на ячейку()
-//    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        showInfoVC(with: viewModel.getArticle(for: indexPath.row) )
-//    }
 }
-    
-    // MARK: - UICollectionViewDelegate
+
+// MARK: - UICollectionViewDelegate
 extension GeneralViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
-        let article = viewModel.getArticle(for: indexPath.row)
+        guard let article = viewModel.sections[indexPath.section].items[indexPath.row] as? ArticleCellViewModel else { return  }
         
         navigationController?.pushViewController(InfoVC(viewModel: NewsViewModel(article: article)), animated: true)
-        }
-}
+    }
     
-// ------- ViewModel, Model
-// Добавляем ViewModel для GeneralViewController
-// -- проинициализировать модель (init к-й будет приниматьViewModel )
+    func collectionView(_ collectionView: UICollectionView,
+                        willDisplay cell: UICollectionViewCell,
+                        forItemAt indexPath: IndexPath) {
+        if indexPath.row == (viewModel.sections[indexPath.section].items.count - 15) {
+            viewModel.loadData(searchText: searchBar.text)
+        }
+    }
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        view.endEditing(true)
+    }
+}
+
+// MARK: - UISearchBarDelegate
+extension GeneralViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        print(searchBar.text)
+        guard let text = searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+        
+        viewModel.loadData(searchText: text)
+        searchBar.searchTextField.resignFirstResponder()
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
+    }
+    
+    func searchBar(_ searchBar: UISearchBar,
+                   textDidChange searchText: String) {
+        if searchText.isEmpty {
+            viewModel.loadData(searchText: nil)
+        }
+    }
+}
+
+

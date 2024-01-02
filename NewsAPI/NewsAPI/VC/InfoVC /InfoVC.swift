@@ -15,22 +15,13 @@ final class InfoVC: UIViewController {
     private lazy var scrollView: UIScrollView = {
         let view = UIScrollView()
         
-        view.showsVerticalScrollIndicator = false
+        view.showsVerticalScrollIndicator = true
        
         return view
     }()
     
     private lazy var contentView = UIView()
-    
-//    private lazy var backButton: UIButton = {
-//        let button = UIButton()
-//
-//        let image = UIImage(systemName: "chevron.backward") ?? UIImage()
-//        button.setImage(image, for: .normal)
-//
-//        return button
-//    }()
-    
+
     private lazy var infoImageView: UIImageView = {
         let imageInfo = UIImageView()
         
@@ -84,10 +75,9 @@ final class InfoVC: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .white
-        navigationController?.navigationBar.prefersLargeTitles = false  // ?????
+        navigationController?.navigationBar.prefersLargeTitles = false
         
         setupUI()
-      //  tapBackButton(button: backButton)
         loadData()
     }
     
@@ -110,30 +100,16 @@ final class InfoVC: UIViewController {
     }
     
     // MARK: - Methods
-    
-//    // MARK: - Private methods
-//    private func tapBackButton(button: UIButton) {
-//        button.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
-//        print("back button")
-//    }
-//    @objc
-//    func backButtonTapped(){
-//        if let navigationController = self.navigationController {
-//            navigationController.popViewController(animated: true)
-//        }
-//    }
-    
     private func setupUI() {
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
-      //  contentView.addSubview(backButton)
+      
         contentView.addSubview(infoImageView)
         contentView.addSubview(infoTitle)
         contentView.addSubview(descriptionNews)
         contentView.addSubview(datePublic)
         
         setupConstraints()
-        
     }
     
     private func setupConstraints() {
@@ -145,11 +121,6 @@ final class InfoVC: UIViewController {
             make.width.edges.equalToSuperview()
         }
         
-//        backButton.snp.makeConstraints { make in
-//            make.leading.equalToSuperview().offset(edgeInset)
-//            make.top.equalToSuperview().inset(edgeInset)
-//        }
-//
         infoImageView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(edgeInset)
             make.leading.trailing.equalToSuperview().inset(edgeInset)
